@@ -27,4 +27,7 @@ public interface HelpRepository extends CrudRepository<Help, Long> {
      */
     @Query(value="SELECT r FROM HelpResource r WHERE r.resource IS NULL AND r.help.id =:helpId")
     public List<HelpResource> getCommentsByHelp(Long helpId);
+    
+    @Query(value="SELECT r FROM HelpResource r WHERE r.resource IS NOT NULL AND r.help.id =:helpId")
+    public List<HelpResource> getResourcesByHelp(Long helpId);
 }

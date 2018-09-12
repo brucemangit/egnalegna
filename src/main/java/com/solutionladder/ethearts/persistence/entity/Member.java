@@ -17,7 +17,6 @@ import javax.validation.constraints.Size;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
-import com.solutionladder.ethearts.model.errorhandler.MinimumAge;
 import com.solutionladder.ethearts.model.errorhandler.UniqueEmail;
 import com.solutionladder.ethearts.security.TokenUtil;
 
@@ -57,7 +56,7 @@ public class Member extends DatedEntity{
     @JsonIgnore
     private String passwordHash;
 
-    @MinimumAge(value = 18)
+    //@MinimumAge(value = 18)
     private LocalDate dateOfBirth;
 
     /**

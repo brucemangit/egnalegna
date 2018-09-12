@@ -1,5 +1,6 @@
 package com.solutionladder.ethearts.persistence.entity;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -24,7 +25,7 @@ public class HelpResource extends DatedEntity {
      * Initial assumption: if there is no any resource given, mark it as
      * comment.
      */
-    @OneToOne
+    @OneToOne(cascade= {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
     @JoinColumn(nullable = true, name="resource_id")
     private Resource resource;
 

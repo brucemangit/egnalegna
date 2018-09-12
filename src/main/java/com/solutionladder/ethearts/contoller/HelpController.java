@@ -1,5 +1,6 @@
 package com.solutionladder.ethearts.contoller;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -20,7 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.solutionladder.ethearts.model.errorhandler.InvalidArgumentException;
 import com.solutionladder.ethearts.model.response.GenericResponse;
@@ -28,7 +31,10 @@ import com.solutionladder.ethearts.persistence.entity.Contribution;
 import com.solutionladder.ethearts.persistence.entity.Help;
 import com.solutionladder.ethearts.persistence.entity.HelpResource;
 import com.solutionladder.ethearts.persistence.entity.HelpType;
+import com.solutionladder.ethearts.persistence.entity.Resource;
 import com.solutionladder.ethearts.service.HelpService;
+import com.solutionladder.ethearts.service.utility.AwsClientService;
+import com.solutionladder.ethearts.service.utility.FileService;
 
 /**
  * Controller class for handling Help.
@@ -47,6 +53,9 @@ public class HelpController extends BaseController {
 
     @Autowired
     private HelpService helpService;
+
+    @Autowired
+    private AwsClientService awsClientService;
 
     @GetMapping(path = { "", "/" })
     @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or hasRole('ROLE_USER')")
@@ -76,14 +85,89 @@ public class HelpController extends BaseController {
      * @throws JsonMappingException
      * @throws JsonParseException
      */
+    @PostMapping(path = { "/resources", "/resources/" }, produces = "application/json")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or hasRole('ROLE_USER')")
+    public ResponseEntity<GenericResponse> saveHelpResource(@RequestParam List<MultipartFile> resourceFile,
+            @RequestParam Long helpId) throws JsonParseException, JsonMappingException, IOException {
+        GenericResponse response = this.getInitalGenericResponse();
+
+        if (resourceFile == null || resourceFile.size() == 0 || helpId == null) {
+            List<String> messages = Arrays.asList("Invalid Input detected.");
+            response.setMessage(messages);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
+        /**
+         * @todo check if the help exists and belongs to the current user.
+         */
+        Help help = this.helpService.get(helpId);
+        if (help == null) { // and one more test for the ownership of the help
+            List<String> messages = Arrays.asList("The help doesn't exist.");
+            response.setMessage(messages);
+        }
+
+        try {
+            for (MultipartFile file : resourceFile) {
+
+                String fileUniqueName = java.util.UUID.randomUUID() + "."
+                        + FileService.getExtension(file.getOriginalFilename());
+
+                File convertedFile = FileService.convertMultiPartToFile(file);
+                this.awsClientService.uploadFileToS3(fileUniqueName, convertedFile);
+
+                String fileName = "https://s3.amazonaws.com/" + this.awsClientService.getBucketName();
+                fileName += "/" + fileUniqueName;
+                Resource resource = FileService.getResource(file, fileName);
+
+                HelpResource helpResource = new HelpResource();
+                helpResource.setComment("");
+                helpResource.setDateCreated(resource.getDateCreated());
+                helpResource.setHelp(help);
+                helpResource.setResource(resource);
+
+                help.addHelpResource(helpResource);
+            }
+
+            // now "update" the help
+            this.helpService.save(help);
+            response.setSuccess(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @PostMapping(path = { "", "/" }, consumes = "application/json", produces = "application/json")
     @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or hasRole('ROLE_USER')")
-    public ResponseEntity<Help> save(@Valid @RequestBody Help help)
+    public ResponseEntity<GenericResponse> saveHelp(@Valid @RequestBody Help help)
             throws JsonParseException, JsonMappingException, IOException {
 
         help.setMember(this.getCurrentMember());
         this.helpService.save(help);
-        return new ResponseEntity<>(help, HttpStatus.OK);
+        GenericResponse response = this.getInitalGenericResponse();
+        response.setSuccess(true);
+        response.setObject(help);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    @GetMapping(path = { "resources/{helpId}/", "/resources/{helpId}" }, consumes = "application/json", produces = "application/json")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or hasRole('ROLE_USER')")
+    public ResponseEntity<GenericResponse> getResourcesByHelp(@PathVariable("helpId") Long helpId) {
+        GenericResponse response = this.getInitalGenericResponse();
+        
+        if (helpId == null || helpId <= 0) {
+            return null; 
+        }
+        
+        List<HelpResource> resources = this.helpService.getResouces(helpId);
+        response.setSuccess(true);
+        response.setObject(resources);
+        
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping(path = { "{id}", "/{id}" })
@@ -93,7 +177,7 @@ public class HelpController extends BaseController {
             throw new InvalidArgumentException("Invalid Id", null, null);
         }
 
-        return this.helpService.get(id);
+        return this.helpService.getHelpWithResource(id);
     }
 
     @PostMapping(path = { "/helptype", "/helptype/" }, consumes = "application/json", produces = "application/json")
@@ -151,12 +235,12 @@ public class HelpController extends BaseController {
 
         GenericResponse response = new GenericResponse();
         helpResource = this.helpService.saveHelpResource(helpResource);
-        
+
         if (helpResource == null) {
             response.setMessage(Arrays.asList("Please check input values"));
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
-        
+
         response.setSuccess(true);
         response.setObject(helpResource);
         return new ResponseEntity<>(response, HttpStatus.CREATED);

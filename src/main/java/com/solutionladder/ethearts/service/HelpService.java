@@ -3,6 +3,7 @@ package com.solutionladder.ethearts.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -57,6 +58,15 @@ public class HelpService {
             return Help.get();
         return null;
     }
+    
+    public Help getHelpWithResource(Long id) {
+        Help help = this.get(id);
+        if (help != null) {
+            Hibernate.initialize(help.getResources());
+        }
+        
+        return help;
+    }
 
     /**
      * Add resource to help.
@@ -81,6 +91,21 @@ public class HelpService {
         //save updated help
         this.helpRepository.save(help);
         return helpResource;
+    }
+    
+    /**
+     * Get list of resources given the id of the help
+     * 
+     * @param helpId
+     * @return
+     */
+    public List<HelpResource> getResouces(Long helpId) {
+
+        if (helpId == null || helpId <= 0) {
+            return null;
+        }
+
+        return this.helpRepository.getResourcesByHelp(helpId);
     }
 
     /**

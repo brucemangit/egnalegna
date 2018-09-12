@@ -3,11 +3,12 @@ package com.solutionladder.ethearts.contoller;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
 
 import com.solutionladder.ethearts.model.errorhandler.InvalidArgumentException;
 import com.solutionladder.ethearts.model.response.GenericResponse;
@@ -22,6 +23,11 @@ import com.solutionladder.ethearts.security.CustomUser;
  */
 public abstract class BaseController {
 
+    /**
+     * Have access to the logger in each class
+     */
+    private Logger logger = LogManager.getLogger(this.getClass());
+    
     /**
      * When there is error, response the error with common format
      * 
@@ -82,5 +88,9 @@ public abstract class BaseController {
         response.setMessage(messages);
 
         return response;
+    }
+    
+    protected Logger getLogger() {
+        return this.logger;
     }
 }
