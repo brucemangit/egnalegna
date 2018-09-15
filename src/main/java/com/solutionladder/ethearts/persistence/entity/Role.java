@@ -15,6 +15,9 @@ public class Role extends Lookup implements GrantedAuthority{
      */
     private static final long serialVersionUID = 1L;
 
+    public static String ROLE_USER = "ROLE_USER";
+    public static String ROLE_ADMINISTRATOR = "ROLE_ADMINISTRATOR";
+    
     public String getAuthority() {
         return this.getName();
     }

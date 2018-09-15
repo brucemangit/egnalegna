@@ -120,6 +120,7 @@ public class HelpController extends BaseController {
                 Resource resource = FileService.getResource(file, fileName);
 
                 HelpResource helpResource = new HelpResource();
+                helpResource.setMember(this.getCurrentMember());
                 helpResource.setComment("");
                 helpResource.setDateCreated(resource.getDateCreated());
                 helpResource.setHelp(help);
@@ -149,24 +150,46 @@ public class HelpController extends BaseController {
         response.setObject(help);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    
+
     /**
      * 
      * @return
      */
-    @GetMapping(path = { "resources/{helpId}/", "/resources/{helpId}" }, consumes = "application/json", produces = "application/json")
+    @GetMapping(path = { "resources/{helpId}/",
+            "/resources/{helpId}" }, consumes = "application/json", produces = "application/json")
     @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or hasRole('ROLE_USER')")
     public ResponseEntity<GenericResponse> getResourcesByHelp(@PathVariable("helpId") Long helpId) {
         GenericResponse response = this.getInitalGenericResponse();
-        
+
         if (helpId == null || helpId <= 0) {
-            return null; 
+            return null;
         }
-        
+
         List<HelpResource> resources = this.helpService.getResouces(helpId);
         response.setSuccess(true);
         response.setObject(resources);
-        
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    /**
+     * 
+     * @return
+     */
+    @GetMapping(path = { "comments/{helpId}/",
+            "/comments/{helpId}" }, consumes = "application/json", produces = "application/json")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or hasRole('ROLE_USER')")
+    public ResponseEntity<GenericResponse> getCommentByHelp(@PathVariable("helpId") Long helpId) {
+        GenericResponse response = this.getInitalGenericResponse();
+
+        if (helpId == null || helpId <= 0) {
+            return null;
+        }
+
+        List<HelpResource> resources = this.helpService.getComments(helpId);
+        response.setSuccess(true);
+        response.setObject(resources);
+
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -234,6 +257,7 @@ public class HelpController extends BaseController {
         }
 
         GenericResponse response = new GenericResponse();
+        helpResource.setMember(this.getCurrentMember());
         helpResource = this.helpService.saveHelpResource(helpResource);
 
         if (helpResource == null) {

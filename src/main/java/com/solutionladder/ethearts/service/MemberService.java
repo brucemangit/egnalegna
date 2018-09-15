@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.solutionladder.ethearts.persistence.entity.Member;
+import com.solutionladder.ethearts.persistence.entity.Role;
 import com.solutionladder.ethearts.persistence.repository.MemberRepository;
 
 /**
@@ -29,7 +30,9 @@ public class MemberService {
     public MemberRepository memberRepository;
 
     public Member save(Member member) {
-        member.setPasswordHash(this.encryptString(member.getPassword()));
+        if (member.getId() == null || member.getId() <= 0) {
+            member.setPasswordHash(this.encryptString(member.getPassword()));
+        }
         this.memberRepository.save(member);
         return member;
     }
@@ -56,6 +59,19 @@ public class MemberService {
             return member.get();
 
         return null;
+    }
+    
+    /**
+     * Get the role from DB/Cache base on the role name.
+     * @param roleName
+     * @return
+     */
+    public Role getRole(String roleName) {
+        if (roleName == null || roleName.isEmpty()) {
+            return null;
+        }
+        
+        return this.memberRepository.getRole(roleName);
     }
 
     private String encryptString(String string) {

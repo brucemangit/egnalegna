@@ -25,9 +25,16 @@ public class HelpResource extends DatedEntity {
      * Initial assumption: if there is no any resource given, mark it as
      * comment.
      */
-    @OneToOne(cascade= {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
-    @JoinColumn(nullable = true, name="resource_id")
+    @OneToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE })
+    @JoinColumn(nullable = true, name = "resource_id")
     private Resource resource;
+
+    /**
+     * help resource owner.
+     */
+    @OneToOne(cascade = { CascadeType.PERSIST })
+    @JoinColumn(nullable = true, name = "member_id")
+    private Member member;
 
     @NotEmpty
     private String comment;
@@ -56,4 +63,11 @@ public class HelpResource extends DatedEntity {
         this.comment = comment;
     }
 
+    public void setMember(Member member) {
+        this.member = member;
+    }
+
+    public Member getMember() {
+        return this.member;
+    }
 }

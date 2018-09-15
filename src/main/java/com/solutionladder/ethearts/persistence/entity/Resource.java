@@ -19,6 +19,8 @@ public class Resource extends DatedEntity {
     private String type;
     private String extension;
     private boolean blob;
+    private boolean active;
+    private boolean deleted;
 
     public String getName() {
         return name;
@@ -66,5 +68,21 @@ public class Resource extends DatedEntity {
 
     public void setBlob(boolean blob) {
         this.blob = blob;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }

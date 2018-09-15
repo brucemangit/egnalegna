@@ -1,6 +1,7 @@
 package com.solutionladder.ethearts.contoller;
 
 import java.util.Arrays;
+import java.util.List;
 
 import javax.validation.Valid;
 
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -99,5 +101,23 @@ public class ContributionController extends BaseController {
         } catch (Exception ex) {
             throw new InvalidArgumentException("another error here", null, Arrays.asList());
         }
+    }
+    
+    /**
+     * Get the list of donations by the current member
+     * @return
+     */
+    @GetMapping(path= {"", "/"})
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<GenericResponse> donationsByMember() {
+        GenericResponse response = this.getInitalGenericResponse();
+        
+        Member member = this.getCurrentMember();
+        List<MonetaryDonation> donations = this.donationService.getByMember(member);
+        
+        response.setObject(donations);
+        response.setSuccess(true);
+        
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

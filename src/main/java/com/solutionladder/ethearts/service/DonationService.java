@@ -1,5 +1,7 @@
 package com.solutionladder.ethearts.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -84,5 +86,18 @@ public class DonationService {
         }
 
         return donation;
+    }
+    
+    /**
+     * Get list of donations by the given member.
+     * @param member
+     * @return
+     */
+    public List<MonetaryDonation> getByMember(Member member) {
+        if (member == null || member.getId() == null) {
+            return null;
+        }
+        
+        return this.donationRepository.findByMember(member);
     }
 }

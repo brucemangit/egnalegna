@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +24,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.solutionladder.ethearts.model.request.AuthenticationRequest;
+import com.solutionladder.ethearts.model.request.MemberRequest;
 import com.solutionladder.ethearts.model.response.AuthenticationResponse;
 import com.solutionladder.ethearts.model.response.GenericResponse;
 import com.solutionladder.ethearts.persistence.entity.Member;
+import com.solutionladder.ethearts.persistence.entity.Role;
 import com.solutionladder.ethearts.persistence.repository.MemberRepository;
 import com.solutionladder.ethearts.security.JwtTokenProvider;
 import com.solutionladder.ethearts.service.MemberService;
@@ -41,7 +44,7 @@ import com.solutionladder.ethearts.service.MemberService;
 @RestController
 @RequestMapping(path = "/api/member")
 @CrossOrigin(origins = { "*" })
-public class MemberController {
+public class MemberController extends BaseController {
 
     @Autowired
     private MemberService memberService;
@@ -70,9 +73,23 @@ public class MemberController {
      */
     @PutMapping(path = { "", "/" })
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResponseEntity<Member> edit(@Valid @RequestBody Member member) {
-        this.memberService.save(member);
-        return new ResponseEntity<>(member, HttpStatus.OK);
+    public ResponseEntity<GenericResponse> edit(@Valid @RequestBody MemberRequest member) {
+        
+        GenericResponse response = this.getInitalGenericResponse();
+        
+        Member currentMember = this.getCurrentMember();
+        currentMember = this.memberService.get(currentMember.getId());
+        
+        //now update the values
+        currentMember.setFirstName(member.getFirstName());
+        currentMember.setLastName(member.getLastName());
+        currentMember.setEmail(member.getEmail());
+        
+        this.memberService.save(currentMember);
+        response.setSuccess(true);
+        response.setObject(currentMember);
+        
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
@@ -81,9 +98,22 @@ public class MemberController {
      * @see
      */
     @PostMapping(path = { "/", "" }, consumes = "application/json", produces = "application/json")
-    public ResponseEntity<Member> create(@Valid @RequestBody Member member) {
+    public ResponseEntity<GenericResponse> create(@Valid @RequestBody Member member, BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            return this.checkValidationErrors(bindingResult);
+        }
+        GenericResponse response = this.getInitalGenericResponse();
+
+        // by default, assign the member to the ROLE_USER
+        Role role = this.memberService.getRole(Role.ROLE_USER);
+
+        member.addRole(role);
         this.memberService.save(member);
-        return new ResponseEntity<>(member, HttpStatus.CREATED);
+        response.setSuccess(true);
+        response.setObject(member);
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
@@ -106,6 +136,27 @@ public class MemberController {
          * The implementation for this will be having one more column "deleted"
          * and updating that.
          */
+    }
+
+    /**
+     * Get the currently logged member information.
+     * 
+     * @param none
+     * @return ResponseEntity
+     * @return
+     */
+    @GetMapping(path = { "/current", "/current/" })
+    public ResponseEntity<GenericResponse> getMemberInfo() {
+        Member member = this.getCurrentMember();//this provides the id only: maybe add first,last and email?
+        member = this.memberService.get(member.getId());
+        GenericResponse response = this.getInitalGenericResponse();
+
+        if (member != null) {
+            response.setObject(member);
+            response.setSuccess(true);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/authenticate", method = { RequestMethod.POST })
